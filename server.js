@@ -32,7 +32,7 @@ app.listen(PORT, () => console.log(`App is up on http://localhost:${PORT}`));
 //This function takes in the query and makes the request to the API,then format the data that it gets into the object that we need.
 function searchToLatLong(query) {
   const URL = `https://maps.googleapis.com/maps/api/geocode/json?address=${query}&key=${process.env.GEOCODE_API_KEY}`;
-  // console.log('gettog',URL);
+  // console.log('getting',URL);
 
   return superagent.get(URL)
     .then( data => {
@@ -78,108 +78,38 @@ function Weather (day) {
   this.time = new Date(day.time * 1000).toString().slice(0,15);
 }
 
+
 ////YELP
 
 
 app.get('/yelp', (request, response) => {
-  searchYelp(request.query.data)
-    // .then( weatherData => {
-    //   response.send(weatherData);
-    // })
+  searchYelp(request.query.data)//this is the formatted location objecy
+    .then( yelpData => {
+      response.send(yelpData);
+    })
 })
 
 function searchYelp(location){
-  const URL = `https://api.yelp.com/v3/${process.env.YELP_API_KEY}/${location.latitude},${location.longitude}`;
-  
+  const URL = `https://api.yelp.com/v3/businesses/search?latitude=${location.latitude}&longitude=${location.longitude}`;
+
   return superagent.get(URL)
+    .set( 'Authorization', `Bearer ${process.env.YELP_API_KEY}`)
     .then( data => {
-      let yelpData = data.body.daily.data.map( day => {
-        return new Weather(day);
+      let yelpData = data.body.businesses.map( item => {
+        return new Business(item);
       })
-      return weatherData;
+      console.log(yelpData);
+      return yelpData;
     })
 }
 
-//name
-data.businesses[0].name
-//image URL
-data.businesses[0].image_url
-//price
-data.businesses[0].price
-//rating
-data.business[0].rating
-//url
-data.business[0].url
-
-// {
-//   "total": 8228,
-//   "businesses": [
-//     {
-//       "rating": 4,
-//       "price": "$",
-//       "phone": "+14152520800",
-//       "id": "E8RJkjfdcwgtyoPMjQ_Olg",
-//       "alias": "four-barrel-coffee-san-francisco",
-//       "is_closed": false,
-//       "categories": [
-//         {
-//           "alias": "coffee",
-//           "title": "Coffee & Tea"
-//         }
-//       ],
-//       "review_count": 1738,
-//       "name": "Four Barrel Coffee",
-//       "url": "https://www.yelp.com/biz/four-barrel-coffee-san-francisco",
-//       "coordinates": {
-//         "latitude": 37.7670169511878,
-//         "longitude": -122.42184275
-//       },
-//       "image_url": "http://s3-media2.fl.yelpcdn.com/bphoto/MmgtASP3l_t4tPCL1iAsCg/o.jpg",
-//       "location": {
-//         "city": "San Francisco",
-//         "country": "US",
-//         "address2": "",
-//         "address3": "",
-//         "state": "CA",
-//         "address1": "375 Valencia St",
-//         "zip_code": "94103"
-//       },
-//       "distance": 1604.23,
-//       "transactions": ["pickup", "delivery"]
-//     },
-//     // ...
-//   ],
-//   "region": {
-//     "center": {
-//       "latitude": 37.767413217936834,
-//       "longitude": -122.42820739746094
-//     }
-//   }
-// }
-////////////////////////////////////
-// [
-//   {
-//     "name": "Pike Place Chowder",
-//     "image_url": "https://s3-media3.fl.yelpcdn.com/bphoto/ijju-wYoRAxWjHPTCxyQGQ/o.jpg",
-//     "price": "$$   ",
-//     "rating": "4.5",
-//     "url": "https://www.yelp.com/biz/pike-place-chowder-seattle?adjust_creative=uK0rfzqjBmWNj6-d3ujNVA&utm_campaign=yelp_api_v3&utm_medium=api_v3_business_search&utm_source=uK0rfzqjBmWNj6-d3ujNVA"
-//   },
-//   {
-//     "name": "Umi Sake House",
-//     "image_url": "https://s3-media3.fl.yelpcdn.com/bphoto/c-XwgpadB530bjPUAL7oFw/o.jpg",
-//     "price": "$$   ",
-//     "rating": "4.0",
-//     "url": "https://www.yelp.com/biz/umi-sake-house-seattle?adjust_creative=uK0rfzqjBmWNj6-d3ujNVA&utm_campaign=yelp_api_v3&utm_medium=api_v3_business_search&utm_source=uK0rfzqjBmWNj6-d3ujNVA"
-//   },
-//   ...
-// ]
-
-function Weather (day) {
-  this.forecast = day.summary;
-  this.time = new Date(day.time * 1000).toString().slice(0,15);
+function Business(business) {
+  this.name = business.name;
+  this.image_url = business.image_url;
+  this.price = business.price;
+  this.rating = business.rating;
+  this.url = business.url;
 }
-
 
 //////////errors
 function handleError(error,response) {
