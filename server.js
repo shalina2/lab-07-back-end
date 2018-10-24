@@ -53,34 +53,56 @@ function Location(data) {
 /////weather
 
 
+
 app.get('/weather', (request, response)=>{
+
   const locationData = searchToLatLong(request.query.data);
   const weatherData = searchWeather(locationData);
   response.send(weatherData);
 })
 
+return superagent.get(URL) 
+  .then( data => {
+    if (! data.body.results.length) { throw 'No Data';}
 
-
-
-
-
-
-function searchWeather(location){
-  const darkData = require('./data/darksky.json');
-  const dailyWeatherArr = [];
-
-  darkData.daily.data.forEach(daysData => {
-    const weather = new Weather(daysData.summary, daysData.time);
-    dailyWeatherArr.push(weather);
+    let weather = new Weather();
+    //This line fills in the Actual search query to the object.
+    return weather;
   })
 
-  return dailyWeatherArr;
-}
 
 function Weather (day) {
   this.forecast = day.summary;
   this.time = new Date(day.time * 1000).toString().slice(0.15);
 }
+
+
+
+function searchWeather(location){
+//   const darkData = require('./data/darksky.json');
+//   const dailyWeatherArr = [];
+
+//   darkData.daily.data.forEach(daysData => {
+//     const weather = new Weather(daysData.summary, daysData.time);
+//     dailyWeatherArr.push(weather);
+//   })
+
+//   return dailyWeatherArr;
+// }
+
+const URL = `https://api.darksky.net/forecast/${process.env.WEATHER_API_KEY}/${request.query.data.latitude},${request.query.data.longitude}`;
+  console.log('getting',URL);
+
+  return superagent.get(URL)
+    .then( data => {
+      if (! data.body.results.length) { throw 'No Data';}
+
+      let weather = new Weather();
+
+      return weather;
+    })
+}
+
 
 //////////errors
 function handleError(error,response) {
