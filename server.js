@@ -2,6 +2,7 @@
 
 const express = require('express');
 const cors = require('cors');
+const superagent =require('superagent');
 
 require('dotenv').config();
 
@@ -11,11 +12,11 @@ const app = express();
 
 app.use(cors());
 
-app.listen(PORT, () => console.log(`App is up on http://localhost:${PORT}`));
+
 
 //This will take the location name and run the searchtolatlong() which will store the location information as an object that contains latitude,longitude and location name.
 app.get('/location', (request, response) => {
-  console.log('GET /location', request.query.data);
+  // console.log('GET /location', request.query);
   
   //runs the searchtolatlong() which takes in the query data from the URL.
   searchToLatLong(request.query.data)
@@ -26,21 +27,22 @@ app.get('/location', (request, response) => {
     .catch ( error => handleError(error,response));
 });
 
+app.listen(PORT, () => console.log(`App is up on http://localhost:${PORT}`));
+
 //This function takes in the query and makes the request to the API,then format the data that it gets into the object that we need.
 function searchToLatLong(query) {
   const URL = `https://maps.googleapis.com/maps/api/geocode/json?address=${query}&key=${process.env.GEOCODE_API_KEY}`;
-  console.log('gettog',URL);
+  // console.log('gettog',URL);
 
   return superagent.get(URL)
     .then( data => {
-      if (! data.body.results.length) { throw 'No Data';}
-
       let location = new Location(data.body.results[0]);
 
       //This line fills in the Actual search query to the object.
-      location.search_query = query;
+      // location.search_query = query;
       return location;
     })
+    .catch(error => handleError(error));
 }
 
 function Location(data) {
@@ -55,52 +57,43 @@ function Location(data) {
 
 
 app.get('/weather', (request, response)=>{
-
-  const locationData = searchToLatLong(request.query.data);
-  const weatherData = searchWeather(locationData);
-  response.send(weatherData);
+  searchWeather(request.query.data)
+    .then( weatherData => {
+      response.send(weatherData);
+    })
 })
 
-return superagent.get(URL) 
-  .then( data => {
-    if (! data.body.results.length) { throw 'No Data';}
+// return superagent.get(URL)
+//   .then( data => {
+//     if (! data.body.results.length) { throw 'No Data';}
 
-    let weather = new Weather();
-    //This line fills in the Actual search query to the object.
-    return weather;
-  })
+//     let weather = new Weather();
+//     //This line fills in the Actual search query to the object.
+//     return weather;
+//   })
 
 
-function Weather (day) {
-  this.forecast = day.summary;
-  this.time = new Date(day.time * 1000).toString().slice(0.15);
-}
 
 
 
 function searchWeather(location){
-//   const darkData = require('./data/darksky.json');
-//   const dailyWeatherArr = [];
-
-//   darkData.daily.data.forEach(daysData => {
-//     const weather = new Weather(daysData.summary, daysData.time);
-//     dailyWeatherArr.push(weather);
-//   })
-
-//   return dailyWeatherArr;
-// }
-
-const URL = `https://api.darksky.net/forecast/${process.env.WEATHER_API_KEY}/${request.query.data.latitude},${request.query.data.longitude}`;
-  console.log('getting',URL);
-
+  const URL = `https://api.darksky.net/forecast/${process.env.WEATHER_API_KEY}/${location.latitude},${location.longitude}`;
+  
   return superagent.get(URL)
     .then( data => {
-      if (! data.body.results.length) { throw 'No Data';}
+      let weatherData = data.body.daily.data.map( day => {
+        return new Weather(day);
+      })
+      return weatherData;
+      // console.log(weatherData);
+      // response.send(weatherData);
+    })  
 
-      let weather = new Weather();
+}
 
-      return weather;
-    })
+function Weather (day) {
+  this.forecast = day.summary;
+  this.time = new Date(day.time * 1000).toString().slice(0,15);
 }
 
 
